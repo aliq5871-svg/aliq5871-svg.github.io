@@ -81,6 +81,24 @@
   <style>@view-transition { navigation: auto; }</style>
  </head>
  <body class="h-full">
+<div id="login-screen" class="h-full flex items-center justify-center gradient-bg">
+  <div class="bg-white p-8 rounded-xl shadow-lg w-80">
+    <h2 class="text-xl font-bold mb-4 text-center">Login Sistem SKPM</h2>
+
+    <input id="login-username" placeholder="Username"
+      class="w-full mb-3 px-3 py-2 border rounded-lg">
+
+    <input id="login-password" type="password" placeholder="Password"
+      class="w-full mb-4 px-3 py-2 border rounded-lg">
+
+    <button onclick="login()"
+      class="w-full bg-blue-600 text-white py-2 rounded-lg">
+      Login
+    </button>
+
+    <p id="login-error" class="text-red-500 text-sm mt-2 text-center"></p>
+  </div>
+</div>
   <div id="app" class="h-full w-full gradient-bg">
    <header class="bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
@@ -93,6 +111,17 @@
         <p class="text-white/70 text-xs sm:text-sm truncate">SK@S SKPM Kualiti@sekolah</p>
        </div>
       </div>
+<div class="flex items-center gap-2">
+
+  <span id="user-role"
+    class="bg-white/20 text-white px-2 py-1 rounded text-xs font-semibold">
+  </span>
+
+  <button onclick="logout()"
+    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs">
+    Logout
+  </button>
+
      </div>
     </div>
    </header>
@@ -190,7 +219,7 @@
      </div>
     </div>
 <!-- Ranking Sekolah -->
-<div class="bg-white card-modern rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+<div id="ranking-section" class="bg-white card-modern rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
   <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-4">Ranking Sekolah Berdasarkan Skor Keseluruhan</h3>
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -332,6 +361,12 @@
    </div>
   </div>
   <script>
+const USERS = [
+  { username: "admin", password: "1234", role: "admin" },
+  { username: "user", password: "1234", role: "user" }
+];
+
+let currentUser = null;
 const API_URL = "https://script.google.com/macros/s/AKfycbyKI72XW_ynGm_2gp7WMAEWO6NbG5ckI1fVVZymGrAKLnZJRUa4W5Gx3TGxDeALmuJ6xA/exec";
 const LOGO_PPD = "https://i.imgur.com/4EGUuTx.png";
 const SCHOOL_LIST = [
@@ -759,6 +794,7 @@ function setScore(fieldId, score){
 
     
    function initApp() {
+checkLogin();
   document.getElementById('logo-ppd').src = LOGO_PPD;
 populateSchoolDropdowns();
   loadFromSheet();
@@ -903,35 +939,84 @@ updateStandardMiniChart();
       return 'status-poor';
     }
 
-    function renderTable() {
-      const tbody = document.getElementById('assessments-table');
-      
-      if (allRecords.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-500 text-sm"><svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p class="font-medium">Tiada rekod penilaian</p></td></tr>';
-        return;
-      }
+   function renderTable() {
+  const tbody = document.getElementById('assessments-table');
+  
+  if (allRecords.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-500 text-sm"><svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p class="font-medium">Tiada rekod penilaian</p></td></tr>';
+    return;
+  }
 
-      tbody.innerHTML = allRecords.map(record => {
-        const badgeClass = getStatusBadge(record.skor_keseluruhan);
-        return `<tr class="border-b border-gray-200 hover:bg-gray-50">
-          <td class="text-gray-900 py-3 px-4 w-40">${record.school_name}</td>
-          <td class="text-gray-600 py-3 px-4 w-24 hidden sm:table-cell text-xs">${record.school_code || '-'}</td>
-          <td class="text-center font-bold text-gray-900 py-3 px-2 w-16">${record.skor_standard_1.toFixed(1)}</td>
-          <td class="text-center font-bold text-gray-900 py-3 px-2 w-16 hidden md:table-cell">${record.skor_standard_2.toFixed(1)}</td>
-          <td class="text-center font-bold text-gray-900 py-3 px-2 w-16 hidden lg:table-cell">${record.skor_standard_3.toFixed(1)}</td>
-          <td class="text-center font-bold text-gray-900 py-3 px-2 w-16">${record.skor_standard_4.toFixed(1)}</td>
-          <td class="text-center font-bold text-blue-600 py-3 px-2 w-20">${record.skor_keseluruhan.toFixed(2)}</td>
-          <td class="text-center py-3 px-2 w-28 hidden sm:table-cell"><span class="${badgeClass} text-xs">${getStatus(record.skor_keseluruhan)}</span></td>
-          <td class="text-center py-3 px-2 w-24">
-            <div class="flex gap-1 justify-center flex-wrap">
-              <button onclick="viewSummary('${record.__backendId}')" class="text-green-600 hover:text-green-700 font-medium text-xs px-2 py-1 hover:bg-green-50 rounded">Rumusan</button>
-              <button onclick="editRecord('${record.__backendId}')" class="text-blue-600 hover:text-blue-700 font-medium text-xs px-2 py-1 hover:bg-blue-50 rounded">Edit</button>
-              <button onclick="deleteRecord('${record.__backendId}')" class="text-red-600 hover:text-red-700 font-medium text-xs px-2 py-1 hover:bg-red-50 rounded">Del</button>
-            </div>
-          </td>
-        </tr>`;
-      }).join('');
-    }
+  tbody.innerHTML = allRecords.map(record => {
+    const badgeClass = getStatusBadge(record.skor_keseluruhan);
+    const isAdmin = currentUser?.role === "admin";
+
+    return `
+      <tr class="border-b border-gray-200 hover:bg-gray-50">
+        
+        <td class="text-gray-900 py-3 px-4 w-40">
+          ${record.school_name}
+        </td>
+
+        <td class="text-gray-600 py-3 px-4 w-24 hidden sm:table-cell text-xs">
+          ${record.school_code || '-'}
+        </td>
+
+        <td class="text-center font-bold text-gray-900 py-3 px-2 w-16">
+          ${record.skor_standard_1.toFixed(1)}
+        </td>
+
+        <td class="text-center font-bold text-gray-900 py-3 px-2 w-16 hidden md:table-cell">
+          ${record.skor_standard_2.toFixed(1)}
+        </td>
+
+        <td class="text-center font-bold text-gray-900 py-3 px-2 w-16 hidden lg:table-cell">
+          ${record.skor_standard_3.toFixed(1)}
+        </td>
+
+        <td class="text-center font-bold text-gray-900 py-3 px-2 w-16">
+          ${record.skor_standard_4.toFixed(1)}
+        </td>
+
+        <td class="text-center font-bold text-blue-600 py-3 px-2 w-20">
+          ${record.skor_keseluruhan.toFixed(2)}
+        </td>
+
+        <td class="text-center py-3 px-2 w-28 hidden sm:table-cell">
+          <span class="${badgeClass} text-xs">
+            ${getStatus(record.skor_keseluruhan)}
+          </span>
+        </td>
+
+        <!-- 🔥 ROLE CONTROL DI SINI -->
+        <td class="text-center py-3 px-2 w-24">
+          <div class="flex gap-1 justify-center flex-wrap">
+
+            <!-- semua user boleh tengok -->
+            <button onclick="viewSummary('${record.__backendId}')"
+              class="text-green-600 hover:text-green-700 font-medium text-xs px-2 py-1 hover:bg-green-50 rounded">
+              Rumusan
+            </button>
+
+            ${isAdmin ? `
+              <button onclick="editRecord('${record.__backendId}')"
+                class="text-blue-600 hover:text-blue-700 font-medium text-xs px-2 py-1 hover:bg-blue-50 rounded">
+                Edit
+              </button>
+
+              <button onclick="deleteRecord('${record.__backendId}')"
+                class="text-red-600 hover:text-red-700 font-medium text-xs px-2 py-1 hover:bg-red-50 rounded">
+                Del
+              </button>
+            ` : ''}
+
+          </div>
+        </td>
+
+      </tr>
+    `;
+  }).join('');
+}
 
     function updateStandardAverages() {
 
@@ -1010,6 +1095,10 @@ function updateStandardMiniChart() {
 
     
    function showAddModal() {
+ if (!isAdmin()) {
+    showToast("Akses ditolak! Admin sahaja.");
+    return;
+  }
   currentEditId = null;
 
   document.getElementById('modal-title').textContent = 'Penilaian SKPM Sekolah Baru';
@@ -1037,6 +1126,10 @@ setTimeout(updateOverallScore, 0);
 
 
    function editRecord(backendId) {
+ if (!isAdmin()) {
+    showToast("Akses ditolak! Admin sahaja.");
+    return;
+  }
   const record = allRecords.find(r => r.__backendId === backendId);
   if (!record) return;
 
@@ -1080,6 +1173,10 @@ setTimeout(updateOverallScore, 0);
          }
 
    async function handleFormSubmit(e) {
+ if (!isAdmin()) {
+    showToast("Akses ditolak! Admin sahaja.");
+    return;
+  }
 let oldScores = {};
 if (currentEditId) {
   const oldRecord = allRecords.find(r => r.__backendId === currentEditId);
@@ -1156,7 +1253,13 @@ const fieldId = `item_${item.std}_${kodOnly}_${item.aspek}`.replace(/\./g,'_');
   }
 }
 
-   async function deleteRecord(backendId) {
+ async function deleteRecord(backendId) {
+
+  if (!isAdmin()) {
+    showToast("Akses ditolak! Admin sahaja.");
+    return;
+  }
+
   if (!confirm('Padam rekod penilaian ini?')) return;
 
   await saveToSheet({
@@ -1384,7 +1487,83 @@ function downloadPDF() {
 
   html2pdf().set(opt).from(element).save();
 }
+function login() {
+  const username = document.getElementById('login-username').value;
+  const password = document.getElementById('login-password').value;
 
+  const user = USERS.find(u => u.username === username && u.password === password);
+
+  if (!user) {
+    document.getElementById('login-error').textContent = "Login gagal!";
+    return;
+  }
+
+  currentUser = user;
+  localStorage.setItem("skpm_user", JSON.stringify(user));
+
+  document.getElementById('login-screen').style.display = "none";
+  document.getElementById('app').style.display = "block";
+
+  applyRoleAccess();
+}
+
+// auto login bila reload
+function checkLogin() {
+  const saved = localStorage.getItem("skpm_user");
+
+  if (saved) {
+    currentUser = JSON.parse(saved);
+    document.getElementById('login-screen').style.display = "none";
+    document.getElementById('app').style.display = "block";
+  } else {
+    document.getElementById('app').style.display = "none";
+  }
+
+  applyRoleAccess();
+}
+function applyRoleAccess() {
+  if (!currentUser) return;
+
+  const isAdminUser = currentUser.role === "admin";
+
+  // Papar role di header
+  const roleLabel = document.getElementById("user-role");
+  if (roleLabel) {
+    roleLabel.textContent = isAdminUser ? "ADMIN" : "PENGGUNA";
+  }
+
+  // 🔒 Hide button tambah
+  document.querySelectorAll('[onclick="showAddModal()"]').forEach(btn => {
+    btn.style.display = isAdminUser ? "inline-flex" : "none";
+  });
+
+  // 🔒 Hide export Excel
+  document.querySelectorAll('[onclick="exportExcel()"]').forEach(btn => {
+    btn.style.display = isAdminUser ? "inline-flex" : "none";
+  });
+
+  // 🔥 HIDE RANKING (yang kau minta)
+  const rankingSection = document.getElementById("ranking-section");
+  if (rankingSection) {
+    rankingSection.style.display = isAdminUser ? "block" : "none";
+  }
+
+  // 🔒 Disable form kalau user
+  if (!isAdminUser) {
+    const form = document.getElementById('assessment-form');
+    if (form) {
+      form.querySelectorAll('input, textarea, select, button').forEach(el => {
+        el.disabled = true;
+      });
+    }
+  }
+}function isAdmin() {
+  return currentUser && currentUser.role === "admin";
+}
+function logout() {
+  localStorage.removeItem("skpm_user");
+  location.reload();
+}
   </script>
  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c9fef110661d04c',t:'MTc3MDQzNjMzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
